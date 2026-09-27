@@ -1,0 +1,11 @@
+# Credentials and session state -- never commit these.
+.env
+.ig_settings.json
+.unfollow_log.jsonl
+
+# Local environment and build artefacts.
+.venv/
+__pycache__/
+*.pyc
+.venv
+*.jsonl
