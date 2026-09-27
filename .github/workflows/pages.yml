@@ -1,0 +1,54 @@
+name: Deploy docs to GitHub Pages
+
+# Publishes README.md as a static docs site. Runs on push to master, and can be
+# triggered by hand from the Actions tab.
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a newer deploy finish rather than cancelling mid-publish, and never run
+# two deploys at once or they can clobber each other.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      # pandoc is preinstalled on ubuntu-latest, and build_docs.py is the same
+      # script used locally, so what is tested here is what is published.
+      - name: Build site
+        run: python3 build_docs.py
+
+      - name: Check for real output
+        run: |
+          test -s _site/index.html || { echo "::_error::index.html is empty"; exit 1; }
+          test -s _site/style.css || { echo "::_error::style.css missing"; exit 1; }
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
